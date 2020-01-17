@@ -1,0 +1,84 @@
+
+// Create a map using Leaflet that plots all of the earthquakes from your 
+// data set based on their longitude and latitude.
+
+var queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson" ;
+
+d3.json(queryUrl, function(data) {
+  createFeatures(data.features);
+});
+
+function createFeatures(earthquakeData) {
+
+// Include popups that provide additional information about the earthquake 
+// when a marker is clicked. 
+  function onEachFeature(feature, layer) {
+    layer.bindPopup("<h3>" + feature.properties.place +
+      "</h3><hr><p>" + new Date(feature.properties.time) + "</p>");
+  }
+
+  function getColor(magnitude) {    switch (true) {    case magnitude > 5:      return "#EA2C2C";    case magnitude > 4:      return "#EA822C";    case magnitude > 3:      return "#EE9C00";    case magnitude > 2:      return "#EECC00";    case magnitude > 1:      return "#D4EE00";    default:      return "#98EE00";    }  }
+  
+  function style(feature) {
+    return {
+        fillColor: getColor(feature.properties.mag),
+        weight: 2,
+        opacity: 1,
+        color: 'white',
+        fillOpacity: 0.7
+    };
+}
+
+  var earthquakes = L.geoJSON(earthquakeData, {
+    onEachFeature: onEachFeature, 
+    pointToLayer: function(feature, latlng) 
+    {return L.circleMarker(latlng); 
+    }, 
+    style: style
+  });
+
+  createMap(earthquakes);
+}
+
+function createMap(earthquakes) {
+  var streetmap = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
+    attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+    maxZoom: 18,
+    id: "mapbox.streets",
+    accessToken: API_KEY
+  });
+
+  var darkmap = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
+    attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+    maxZoom: 18,
+    id: "mapbox.dark",
+    accessToken: API_KEY
+  });
+
+  // Define a baseMaps object to hold our base layers
+  var baseMaps = {
+    "Street Map": streetmap,
+    "Dark Map": darkmap
+  };
+
+  // Create overlay object to hold our overlay layer
+  var overlayMaps = {
+    Earthquakes: earthquakes
+  };
+
+  // Create our map, giving it the streetmap and earthquakes layers to display on load
+  var myMap = L.map("map", {
+    center: [
+      37.09, -95.71
+    ],
+    zoom: 5,
+    layers: [streetmap, earthquakes]
+  });
+
+ 
+  L.control.layers(baseMaps, overlayMaps, {
+    collapsed: false
+  }).addTo(myMap);
+}
+
+ 
